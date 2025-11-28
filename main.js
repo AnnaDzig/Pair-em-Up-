@@ -15,8 +15,6 @@ import {
 import { createRoot, renderStartScreen } from "./screens.js";
 
 let START_DEPS = null;
-state._won = false;
-state._lost = false;
 
 function stopTimer() {
   if (state.timerId) {
@@ -72,7 +70,7 @@ function toggleSelect(i) {
       checkPair(aIdx, bIdx);
       return; 
     }
-    if (state._won || state._lost) return;
+    if (state._won) return;
   }
   renderGrid();
 }
@@ -147,43 +145,6 @@ function showWinMessage() {
     openModal("results-modal");
   }
 
-  function checkLose(trigger = "") {
-  // 2) Grid limit lose (immediate on reach)
-  if (state.grid.length >= state.maxCells) {
-    return showLoseMessage("grid-limit");
-  }
-
-  // 1) No moves & no assists left
-  const moves = computeValidMovesCount(); // 0..6
-  const hasAssists = assistsAvailable();
-  if (moves === 0 && !hasAssists) {
-    return showLoseMessage("no-moves");
-  }
-  // else still playable
-}
-
-function showLoseMessage(reason) {
-  if (state._lost || state._won) return;
-  state._lost = true;
-  stopTimer();
-
-  addResult?.({
-    mode: state.mode,
-    score: state.score,
-    timeSec: state.timeSec,
-    moves: state.moves,
-    win: false,
-    reason,
-  });
-
-  const res = document.getElementById("results-modal");
-  if (res) {
-    initResultsUI?.(res);
-    openModal("results-modal");
-  }
-}
-
-
   // Rebuild start screen first (so modal exists)
   const root = document.getElementById("app");
   if (root) {
@@ -197,8 +158,6 @@ function showLoseMessage(reason) {
       continueGame,
     });
   }
-
-
 
   const resultsModal = document.getElementById("results-modal");
   if (resultsModal) {
@@ -230,15 +189,13 @@ function renderGrid() {
     if (!isEmpty) {
 cell.addEventListener("click", () => {
   if (state.eraserMode) {
-   const r = eraseCellAt(i);
-    if (r.erased) {
+    const { erased } = eraseCellAt(i);
+    if (erased) {
       renderGrid();
       updateAssistButtons();
-      updateHintCount?.();
-      updateRevertButton?.();
-      checkLose("after-eraser");
-    }
+      updateHintCount();
       return;
+    }
   }
   toggleSelect(i);
 });
@@ -563,8 +520,6 @@ function updateAssistButtons() {
 
 
 function applyPair(aIndex, bIndex, points) {
-  if (state._won || state._lost) return;
-
   const aVal = state.grid[aIndex];
   const bVal = state.grid[bIndex];
 
@@ -582,38 +537,32 @@ function applyPair(aIndex, bIndex, points) {
 
   // UI refresh
   state.selection = [];
- updateScore?.();
-  renderGrid?.();
+  updateScore();
+  renderGrid();
   updateAssistButtons?.();
   updateRevertButton?.();
   updateHintCount?.();
 
   // check win AFTER UI update
-   if (state.score >= state.target) {
-    showWinMessage?.();
-  } else {
-    checkLose?.("after-pair");
+  if (state.score >= state.target) {
+    showWinMessage();
   }
 }
 
 function revertLastMove() {
-  if (!state.canRevert || !state.lastMove || state._won || state._lost) return;
-
+  if (!state.canRevert || !state.lastMove) return;
   const { aIndex, bIndex, aVal, bVal, points } = state.lastMove;
 
   state.grid[aIndex] = aVal;
   state.grid[bIndex] = bVal;
-  state.score = Math.max(0, state.score - points);
+  state.score -= points;
 
   state.lastMove = null;
   state.canRevert = false;
- updateScore?.();
-  renderGrid?.();
-  updateAssistButtons?.();
-  updateHintCount?.();
-  updateRevertButton?.();
 
-  checkLose?.("after-revert");
+  updateScore();
+  renderGrid();
+  updateAssistButtons?.();
 }
 
 function updateHintCount() {
@@ -644,32 +593,6 @@ function updateHintCount() {
   hintBtn.textContent = `Hints: ${count}`;
 }
 
-function computeValidMovesCount() {
-  let count = 0;
-  const filled = [];
-  for (let i = 0; i < state.grid.length; i++) {
-    if (state.grid[i] != null) filled.push(i);
-  }
-  for (let a = 0; a < filled.length; a++) {
-    for (let b = a + 1; b < filled.length; b++) {
-      const i = filled[a], j = filled[b];
-      if (!canConnect(i, j)) continue;
-      if (scorePair(state.grid[i], state.grid[j]) > 0) {
-        count++;
-        if (count >= 6) return 6; // represent "5+"
-      }
-    }
-  }
-  return count; // 0..6
-}
-
-function assistsAvailable() {
-  const canAdd = state.addUses < state.maxAddUses && state.grid.length < state.maxCells;
-  const canShuffle = state.shuffleUses < state.maxShuffleUses;
-  const canEraser  = state.eraserUses  < state.maxEraserUses;
-  return canAdd || canShuffle || canEraser;
-}
-
 function updateRevertButton() {
   const r = document.getElementById("btn-revert");
   if (r) r.disabled = !state.canRevert;
@@ -691,7 +614,7 @@ function startNewGame(root, mode) {
   state.lastMove = null;
   state.moves = 0;
   state._won = false;
-  state._lost = false;
+
 
   // initial grid by mode
 if (mode === "classic") {
@@ -774,35 +697,34 @@ if (resModal) initResultsUI(resModal);
 });
 
   btnHint.addEventListener("click", () => updateHintCount());
-  btnRevert.addEventListener("click", () => { revertLastMove()});
+  btnRevert.addEventListener("click", () => { revertLastMove(); updateRevertButton(); });
 
 btnAdd.addEventListener("click", () => {
-  const res = handleAddNumbers();
-  if (res?.atCap) {
-      checkLose("grid-cap-before-add");
-    return;
-  }
-  if (res?.changed) {
-     checkLose("after-add");
-  }
-}); 
-  
-const btnShuffle = el("button", { id: "btn-shuffle" }, `Shuffle (${state.shuffleUses}/${state.maxShuffleUses})`);
-btnShuffle.addEventListener("click", () => {
-    const res = handleShuffle();
-  if (res?.changed) {
+  const { changed } = handleAddNumbers();
+  if (changed) {
     renderGrid();
     updateAssistButtons();
-    updateHintCount?.();
-    updateRevertButton?.();
-    checkLose("after-shuffle");
+    updateHintCount();
+  } else {
+    updateAssistButtons();
   }
 });
 
+const btnShuffle = el("button", { id: "btn-shuffle" }, `Shuffle (${state.shuffleUses}/${state.maxShuffleUses})`);
+btnShuffle.addEventListener("click", () => {
+  const { changed } = handleShuffle();
+  if (changed) {
+    renderGrid();
+    updateAssistButtons();
+    updateHintCount();
+  } else {
+    updateAssistButtons();
+  }
+});
 
 const btnEraser  = el("button", { id: "btn-eraser"  }, `Eraser (${state.eraserUses}/${state.maxEraserUses})`);
 btnEraser.addEventListener("click", () => {
-const t = handleEraserToggle();
+  const { toggled } = handleEraserToggle();
   updateAssistButtons();
 });
 
@@ -861,4 +783,3 @@ function gotoMainMenu() {
   const res = document.getElementById("results-modal");
   if (res) initResultsUI(res);
 }
-
