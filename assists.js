@@ -48,9 +48,7 @@ export function handleAddNumbers() {
   }
 
   const available = Math.max(0, state.maxCells - state.grid.length);
-  if (available === 0){ 
-    return { changed: false, atCap: true };
-   };
+  if (available === 0) return { changed: false };
 
   if (toAppend.length > available) {
     toAppend = toAppend.slice(0, available);
@@ -61,10 +59,6 @@ export function handleAddNumbers() {
   state.grid = state.grid.concat(toAppend);
   state.addUses += 1;
   state.selection = [];
-  renderGrid();
-  updateAssistButtons();
-  updateHintCount?.();
-  updateRevertButton?.();
 
   return { changed: true };
 }
