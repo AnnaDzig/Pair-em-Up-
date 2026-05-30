@@ -1,30 +1,32 @@
 // state.js
 export const state = {
-  mode: null,          // 'classic' | 'random' | 'chaotic'
+  mode: null, // 'classic' | 'random' | 'chaotic'
+
   score: 0,
-  target: 100,
   timeSec: 0,
   timerId: null,
-  width: 9,           // grid is 9 columns wide
+
+  width: 9,
 
   grid: [],
   selection: [],
 
-  // assists: Add
+  // Add numbers = tries
   addUses: 0,
   maxAddUses: 10,
-  maxCells: 9 * 50,   // 50-row limit
+  maxCells: 9 * 50,
 
   // undo
   lastMove: null,
   canRevert: false,
 
-  // assists: Shuffle / Eraser
+  // assists
   shuffleUses: 0,
   maxShuffleUses: 5,
   eraserUses: 0,
   maxEraserUses: 5,
   eraserMode: false,
 
-  nextClassicNumber: 20,
+  moves: 0,
+  _won: false,
 };

@@ -531,6 +531,10 @@ function updateAssistButtons() {
   }
 }
 
+function isBoardEmpty() {
+  return state.grid.every((cell) => cell == null);
+}
+
 function applyPair(aIndex, bIndex, points) {
   const aVal = state.grid[aIndex];
   const bVal = state.grid[bIndex];
@@ -555,8 +559,15 @@ function applyPair(aIndex, bIndex, points) {
   updateRevertButton?.();
   updateHintCount?.();
 
-  // check win AFTER UI update
-  if (state.score >= state.target) {
+  // Classic mode win condition:
+  // player wins only when all numbers are removed
+  if (state.mode === "classic" && isBoardEmpty()) {
+    showWinMessage();
+    return;
+  }
+
+  // Optional: keep old score win only for random/chaotic
+  if (state.mode !== "classic" && state.score >= 100) {
     showWinMessage();
   }
 }
