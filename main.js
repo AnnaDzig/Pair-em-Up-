@@ -129,6 +129,7 @@ function showWinMessage() {
 
   stopTimer();
   // document.body.classList.add("win");
+  alert("You won! All numbers were removed.");
 
   // record the result
   addResult({
@@ -537,6 +538,23 @@ function updateAssistButtons() {
 function isBoardEmpty() {
   return state.grid.every((cell) => cell == null);
 }
+function getRemainingNumbersCount() {
+  return state.grid.filter((cell) => cell != null).length;
+}
+
+function checkClassicWin() {
+  if (state.mode !== "classic") return false;
+  if (state._won) return false;
+
+  const remainingNumbers = getRemainingNumbersCount();
+
+  if (remainingNumbers === 0) {
+    showWinMessage();
+    return true;
+  }
+
+  return false;
+}
 
 function applyPair(aIndex, bIndex, points) {
   const aVal = state.grid[aIndex];
@@ -554,8 +572,10 @@ function applyPair(aIndex, bIndex, points) {
   state.lastMove = { aIndex, bIndex, aVal, bVal, points };
   state.canRevert = true;
 
-  // UI refresh
+  // clear selection
   state.selection = [];
+
+  // UI refresh
   updateScore();
   renderGrid();
   updateAssistButtons?.();
@@ -563,13 +583,12 @@ function applyPair(aIndex, bIndex, points) {
   updateHintCount?.();
 
   // Classic mode win condition:
-  // player wins only when all numbers are removed
-  if (state.mode === "classic" && isBoardEmpty()) {
-    showWinMessage();
+  // win only when all numbers are removed
+  if (checkClassicWin()) {
     return;
   }
 
-  // Optional: keep old score win only for random/chaotic
+  // Optional old win condition only for random/chaotic
   if (state.mode !== "classic" && state.score >= 100) {
     showWinMessage();
   }
