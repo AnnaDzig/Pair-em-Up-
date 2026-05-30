@@ -510,7 +510,10 @@ function closeModal(id) {
 function updateAssistButtons() {
   const addBtn = document.getElementById("btn-add");
   if (addBtn) {
-    addBtn.textContent = `Add numbers (${state.addUses}/${state.maxAddUses})`;
+    addBtn.textContent =
+      state.mode === "classic"
+        ? `Try / Add numbers (${state.addUses}/${state.maxAddUses})`
+        : `Add numbers (${state.addUses}/${state.maxAddUses})`;
     const atUsageCap = state.addUses >= state.maxAddUses;
     const atGridCap = state.grid.length >= state.maxCells;
     addBtn.disabled = atUsageCap || atGridCap;
@@ -674,10 +677,8 @@ function renderGameScreen(root) {
   const scoreBox = el(
     "div",
     { class: "score" },
-    "Score: ",
+    state.mode === "classic" ? "Removed pairs: " : "Score: ",
     el("strong", { id: "score" }, String(state.score)),
-    " / ",
-    String(state.target),
   );
 
   const timerBox = el(
@@ -708,7 +709,9 @@ function renderGameScreen(root) {
   const btnAdd = el(
     "button",
     { id: "btn-add", class: "action-btn" },
-    `Add numbers (${state.addUses}/${state.maxAddUses})`,
+    state.mode === "classic"
+      ? `Try / Add numbers (${state.addUses}/${state.maxAddUses})`
+      : `Add numbers (${state.addUses}/${state.maxAddUses})`,
   );
   const btnMenu = el(
     "button",
