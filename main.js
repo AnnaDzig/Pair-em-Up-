@@ -516,8 +516,9 @@ function updateAssistButtons() {
         ? `Try / Add numbers (${state.addUses}/${state.maxAddUses})`
         : `Add numbers (${state.addUses}/${state.maxAddUses})`;
     const atUsageCap = state.addUses >= state.maxAddUses;
-    const atGridCap = state.grid.length >= state.maxCells;
-    addBtn.disabled = atUsageCap || atGridCap;
+    const noVisibleNumbers = state.grid.every((cell) => cell == null);
+
+    addBtn.disabled = atUsageCap || noVisibleNumbers;
   }
 
   const shBtn = document.getElementById("btn-shuffle");

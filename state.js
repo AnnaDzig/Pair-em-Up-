@@ -14,7 +14,6 @@ export const state = {
   // Add numbers = tries
   addUses: 0,
   maxAddUses: 10,
-  maxCells: 9 * 50,
 
   // undo
   lastMove: null,

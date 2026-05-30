@@ -30,31 +30,32 @@ export function shuffleNumbersInGridPreservingEmpties() {
 }
 
 export function handleAddNumbers() {
-  if (state.addUses >= state.maxAddUses) return { changed: false };
-
-  const remaining = collectRemainingDigitsInReadingOrder();
-  const n = remaining.length;
-  if (n === 0) return { changed: false };
+  if (state.addUses >= state.maxAddUses) {
+    return { changed: false };
+  }
 
   let toAppend = [];
 
   if (state.mode === "classic") {
-    toAppend = remaining;
+    // Add all numbers that are still visible on the board, in reading order.
+    toAppend = collectRemainingDigitsInReadingOrder();
   } else if (state.mode === "random") {
-    toAppend = remaining.slice();
+    // Same visible numbers, but shuffled.
+    toAppend = collectRemainingDigitsInReadingOrder();
     shuffle(toAppend);
   } else if (state.mode === "chaotic") {
-    toAppend = Array.from({ length: n }, () => 1 + Math.floor(Math.random() * 9));
+    // Same amount as visible numbers, but random values.
+    const remainingCount = collectRemainingDigitsInReadingOrder().length;
+
+    toAppend = Array.from(
+      { length: remainingCount },
+      () => 1 + Math.floor(Math.random() * 9),
+    );
   }
 
-  const available = Math.max(0, state.maxCells - state.grid.length);
-  if (available === 0) return { changed: false };
-
-  if (toAppend.length > available) {
-    toAppend = toAppend.slice(0, available);
+  if (toAppend.length === 0) {
+    return { changed: false };
   }
-
-  if (toAppend.length === 0) return { changed: false };
 
   state.grid = state.grid.concat(toAppend);
   state.addUses += 1;
