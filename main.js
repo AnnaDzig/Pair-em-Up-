@@ -49,7 +49,6 @@ function startTimerAt(initialSeconds) {
   }, 1000);
 }
 
-
 // ---------- Grid helpers ----------
 
 function seedGridForDemo(mode) {
@@ -62,19 +61,18 @@ function seedGridForDemo(mode) {
 function toggleSelect(i) {
   const pos = state.selection.indexOf(i);
   if (pos !== -1) {
-    state.selection.splice(pos, 1); 
+    state.selection.splice(pos, 1);
   } else {
     state.selection.push(i);
     if (state.selection.length === 2) {
       const [aIdx, bIdx] = state.selection;
       checkPair(aIdx, bIdx);
-      return; 
+      return;
     }
     if (state._won) return;
   }
   renderGrid();
 }
-
 
 function checkPair(aIndex, bIndex) {
   const a = state.grid[aIndex];
@@ -86,36 +84,38 @@ function checkPair(aIndex, bIndex) {
     return;
   }
 
-  if (!canConnect(aIndex, bIndex)) {
-    } else {
+  const points = scorePair(a, b);
+  const connected = canConnect(aIndex, bIndex);
+
+  if (points > 0 && connected) {
+    applyPair(aIndex, bIndex, points);
+    return;
+  }
+
   // Wrong pair feedback
   const gridEl = document.getElementById("grid");
+
   if (gridEl) {
-    for (const idx of [aIndex, bIndex]) {
-      const cell = gridEl.querySelector(`[data-i="${idx}"]`);
+    for (const index of [aIndex, bIndex]) {
+      const cell = gridEl.querySelector(`[data-i="${index}"]`);
       if (cell) cell.classList.add("wrong");
     }
-    // Remove the "wrong" class after animation ends
+
     setTimeout(() => {
-      for (const idx of [aIndex, bIndex]) {
-        const cell = gridEl.querySelector(`[data-i="${idx}"]`);
+      for (const index of [aIndex, bIndex]) {
+        const cell = gridEl.querySelector(`[data-i="${index}"]`);
         if (cell) cell.classList.remove("wrong");
       }
+
       state.selection = [];
       renderGrid();
     }, 400);
-  }
+
+    return;
   }
 
-  const points = scorePair(a, b);
-  if (points > 0) {
-    applyPair(aIndex, bIndex, points); // handles UI + win + undo snapshot
-  } else {
-    setTimeout(() => {
-      state.selection = [];
-      renderGrid();
-    }, 250);
-  }
+  state.selection = [];
+  renderGrid();
 }
 
 function updateScore() {
@@ -124,11 +124,11 @@ function updateScore() {
 }
 
 function showWinMessage() {
-  if (state._won) return;    
+  if (state._won) return;
   state._won = true;
 
   stopTimer();
- // document.body.classList.add("win");
+  // document.body.classList.add("win");
 
   // record the result
   addResult({
@@ -139,9 +139,9 @@ function showWinMessage() {
     win: true,
   });
   clearSave?.();
-   const res = document.getElementById("results-modal");
+  const res = document.getElementById("results-modal");
   if (res) {
-    initResultsUI?.(res);     
+    initResultsUI?.(res);
     openModal("results-modal");
   }
 
@@ -183,28 +183,27 @@ function renderGrid() {
         "data-i": String(i),
         "aria-pressed": state.selection.includes(i) ? "true" : "false",
       },
-      isEmpty ? "" : String(val)
+      isEmpty ? "" : String(val),
     );
 
     if (!isEmpty) {
-cell.addEventListener("click", () => {
-  if (state.eraserMode) {
-    const { erased } = eraseCellAt(i);
-    if (erased) {
-      renderGrid();
-      updateAssistButtons();
-      updateHintCount();
-      return;
-    }
-  }
-  toggleSelect(i);
-});
+      cell.addEventListener("click", () => {
+        if (state.eraserMode) {
+          const { erased } = eraseCellAt(i);
+          if (erased) {
+            renderGrid();
+            updateAssistButtons();
+            updateHintCount();
+            return;
+          }
+        }
+        toggleSelect(i);
+      });
     }
 
     gridEl.append(cell);
   }
 }
-
 
 function hasSavedGame() {
   try {
@@ -238,19 +237,19 @@ function serializeSave() {
 }
 
 function applyLoadedSave(s) {
-  state.mode        = s.mode;
-  state.grid        = s.grid;
-  state.score       = s.score;
-  state.timeSec     = s.timeSec;
-  state.selection   = Array.isArray(s.selection) ? s.selection : [];
+  state.mode = s.mode;
+  state.grid = s.grid;
+  state.score = s.score;
+  state.timeSec = s.timeSec;
+  state.selection = Array.isArray(s.selection) ? s.selection : [];
 
-  state.addUses     = s.addUses ?? 0;
+  state.addUses = s.addUses ?? 0;
   state.shuffleUses = s.shuffleUses ?? 0;
-  state.eraserUses  = s.eraserUses ?? 0;
-  state.eraserMode  = !!s.eraserMode;
+  state.eraserUses = s.eraserUses ?? 0;
+  state.eraserMode = !!s.eraserMode;
 
-  state.lastMove    = s.lastMove ?? null;
-  state.canRevert   = !!s.canRevert;
+  state.lastMove = s.lastMove ?? null;
+  state.canRevert = !!s.canRevert;
 }
 
 function saveGame() {
@@ -307,12 +306,12 @@ function saveResults(arr) {
   } catch {}
 }
 
-// result = { mode, score, timeSec, moves, win } 
+// result = { mode, score, timeSec, moves, win }
 function addResult(result) {
   const list = loadResults();
 
   list.push(result);
-  list.sort((a, b) => (a.timeSec|0) - (b.timeSec|0));
+  list.sort((a, b) => (a.timeSec | 0) - (b.timeSec | 0));
 
   const trimmed = list.slice(0, 5);
 
@@ -339,8 +338,7 @@ function loadSettings() {
 function saveSettings(settings) {
   try {
     localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
-  } catch {
-  }
+  } catch {}
 }
 
 function applyTheme(theme) {
@@ -363,12 +361,17 @@ function initSettingsUI(settingsModalEl) {
 
   // theme row
   const wrap = el("div", { style: "margin-top: 1rem;" });
-  const label = el("p", {}, "Theme: ", el("strong", { id: "theme-label" }, settings.theme));
+  const label = el(
+    "p",
+    {},
+    "Theme: ",
+    el("strong", { id: "theme-label" }, settings.theme),
+  );
 
   const toggleBtn = el(
     "button",
     { id: "theme-toggle-btn", style: "margin-top: 0.5rem;" },
-    settings.theme === "dark" ? "Switch to Light" : "Switch to Dark"
+    settings.theme === "dark" ? "Switch to Light" : "Switch to Dark",
   );
 
   toggleBtn.addEventListener("click", () => {
@@ -381,7 +384,8 @@ function initSettingsUI(settingsModalEl) {
     // update UI labels
     const lbl = box.querySelector("#theme-label");
     if (lbl) lbl.textContent = nextTheme;
-    toggleBtn.textContent = nextTheme === "dark" ? "Switch to Light" : "Switch to Dark";
+    toggleBtn.textContent =
+      nextTheme === "dark" ? "Switch to Light" : "Switch to Dark";
   });
 
   wrap.append(label, toggleBtn);
@@ -395,17 +399,21 @@ function initResultsUI(resultsModalEl) {
   box.innerHTML = "";
 
   const title = el("h2", {}, "Results");
-  const info  = el("p", {}, "Latest 5 games (sorted by time). Trophy = win.");
+  const info = el("p", {}, "Latest 5 games (sorted by time). Trophy = win.");
 
   const table = el("table", { class: "results-table" });
-  const thead = el("thead", {},
-    el("tr", {},
+  const thead = el(
+    "thead",
+    {},
+    el(
+      "tr",
+      {},
       el("th", {}, "Mode"),
       el("th", {}, "Score"),
       el("th", {}, "Time"),
       el("th", {}, "Moves"),
-      el("th", {}, "Win")
-    )
+      el("th", {}, "Win"),
+    ),
   );
   const tbody = el("tbody", { id: "results-tbody" });
 
@@ -417,40 +425,46 @@ function initResultsUI(resultsModalEl) {
   }
 
   for (const r of results) {
-    const tr = el("tr", {},
+    const tr = el(
+      "tr",
+      {},
       el("td", {}, formatMode(r.mode)),
       el("td", {}, String(r.score)),
-      el("td", {}, formatTime(r.timeSec|0)),
-      el("td", {}, String(r.moves|0)),
-      el("td", {}, r.win ? "🏆" : "—")
+      el("td", {}, formatTime(r.timeSec | 0)),
+      el("td", {}, String(r.moves | 0)),
+      el("td", {}, r.win ? "🏆" : "—"),
     );
     tbody.append(tr);
   }
 
   table.append(thead, tbody);
   box.append(title, info, table);
-// Action buttons
-const actions = el("div", { class: "btn-row", style: "margin-top: .75rem;" });
+  // Action buttons
+  const actions = el("div", { class: "btn-row", style: "margin-top: .75rem;" });
 
-const btnAgain = el("button", {}, "Play again");
-btnAgain.addEventListener("click", () => {
-  closeModal("results-modal");
-  state._won = false;
-  // restart the same mode in place
-  const root = document.getElementById("app");
-  if (root) startNewGame(root, state.mode);
-});
+  const btnAgain = el("button", {}, "Play again");
+  btnAgain.addEventListener("click", () => {
+    closeModal("results-modal");
+    state._won = false;
+    // restart the same mode in place
+    const root = document.getElementById("app");
+    if (root) startNewGame(root, state.mode);
+  });
 
-const btnMenu = el("button", {}, "Main menu");
-btnMenu.addEventListener("click", () => {
-  closeModal("results-modal");
-  gotoMainMenu();
-});
+  const btnMenu = el("button", {}, "Main menu");
+  btnMenu.addEventListener("click", () => {
+    closeModal("results-modal");
+    gotoMainMenu();
+  });
 
-actions.append(btnAgain, btnMenu);
-box.append(actions);
+  actions.append(btnAgain, btnMenu);
+  box.append(actions);
 
-  const closeBtn = el("button", { class: "close-btn", style: "margin-top:.75rem;" }, "Close");
+  const closeBtn = el(
+    "button",
+    { class: "close-btn", style: "margin-top:.75rem;" },
+    "Close",
+  );
   closeBtn.addEventListener("click", () => closeModal("results-modal"));
   box.append(closeBtn);
 }
@@ -477,9 +491,8 @@ function createModal(id, titleText) {
 
   return overlay;
   // build initial Results UI content
-const resultsModal = document.getElementById("results-modal");
-if (resultsModal) initResultsUI(resultsModal);
-
+  const resultsModal = document.getElementById("results-modal");
+  if (resultsModal) initResultsUI(resultsModal);
 }
 
 // Show modal
@@ -499,17 +512,17 @@ function updateAssistButtons() {
   if (addBtn) {
     addBtn.textContent = `Add numbers (${state.addUses}/${state.maxAddUses})`;
     const atUsageCap = state.addUses >= state.maxAddUses;
-    const atGridCap  = state.grid.length >= state.maxCells;
+    const atGridCap = state.grid.length >= state.maxCells;
     addBtn.disabled = atUsageCap || atGridCap;
   }
 
-   const shBtn = document.getElementById("btn-shuffle");
+  const shBtn = document.getElementById("btn-shuffle");
   if (shBtn) {
     shBtn.textContent = `Shuffle (${state.shuffleUses}/${state.maxShuffleUses})`;
     shBtn.disabled = state.shuffleUses >= state.maxShuffleUses;
   }
 
-   const erBtn = document.getElementById("btn-eraser");
+  const erBtn = document.getElementById("btn-eraser");
   if (erBtn) {
     erBtn.textContent = state.eraserMode
       ? `Eraser ON (${state.eraserUses}/${state.maxEraserUses})`
@@ -517,7 +530,6 @@ function updateAssistButtons() {
     erBtn.disabled = state.eraserUses >= state.maxEraserUses;
   }
 }
-
 
 function applyPair(aIndex, bIndex, points) {
   const aVal = state.grid[aIndex];
@@ -577,7 +589,8 @@ function updateHintCount() {
 
   for (let a = 0; a < filled.length; a++) {
     for (let b = a + 1; b < filled.length; b++) {
-      const i = filled[a], j = filled[b];
+      const i = filled[a],
+        j = filled[b];
       if (!canConnect(i, j)) continue;
 
       const points = scorePair(state.grid[i], state.grid[j]);
@@ -598,11 +611,10 @@ function updateRevertButton() {
   if (r) r.disabled = !state.canRevert;
 }
 
-
 // Start a new game for the chosen mode
 function startNewGame(root, mode) {
   document.body.classList.remove("win");
-  state.mode = mode;     // 'classic' | 'random' | 'chaotic'
+  state.mode = mode; // 'classic' | 'random' | 'chaotic'
   state.score = 0;
   state.timeSec = 0;
   state.selection = [];
@@ -615,17 +627,16 @@ function startNewGame(root, mode) {
   state.moves = 0;
   state._won = false;
 
-
   // initial grid by mode
-if (mode === "classic") {
-  state.grid = generateClassicInitialGrid();
-} else if (mode === "random") {
-  state.grid = generateRandomInitialGrid();
-} else if (mode === "chaotic") {
-  state.grid = generateChaoticInitialGrid();
-} else {
-  state.grid = Array(27).fill(null);
-}
+  if (mode === "classic") {
+    state.grid = generateClassicInitialGrid();
+  } else if (mode === "random") {
+    state.grid = generateRandomInitialGrid();
+  } else if (mode === "chaotic") {
+    state.grid = generateChaoticInitialGrid();
+  } else {
+    state.grid = Array(27).fill(null);
+  }
 
   renderGameScreen(root);
   startTimer();
@@ -642,9 +653,11 @@ function renderGameScreen(root) {
   const modeBadge = el(
     "div",
     { class: "mode-badge" },
-    state.mode === "classic" ? "Classic"
-      : state.mode === "random" ? "Random"
-      : "Chaotic"
+    state.mode === "classic"
+      ? "Classic"
+      : state.mode === "random"
+        ? "Random"
+        : "Chaotic",
   );
 
   const scoreBox = el(
@@ -653,82 +666,127 @@ function renderGameScreen(root) {
     "Score: ",
     el("strong", { id: "score" }, String(state.score)),
     " / ",
-    String(state.target)
+    String(state.target),
   );
 
-  const timerBox = el("div", { class: "timer" }, "Time: ", el("strong", { id: "time" }, "00:00"));
+  const timerBox = el(
+    "div",
+    { class: "timer" },
+    "Time: ",
+    el("strong", { id: "time" }, "00:00"),
+  );
   header.append(modeBadge, scoreBox, timerBox);
 
   const controls = el("div", { class: "game-controls" });
-const btnReset  = el("button", { id: "btn-reset",  class: "action-btn" }, "Reset");
-const btnSave   = el("button", { id: "btn-save",   class: "action-btn" }, "Save");
-const btnHint   = el("button", { id: "btn-hint",   class: "action-btn" }, "Hints: ?");
-const btnRevert = el("button", { id: "btn-revert", class: "action-btn" }, "Revert");
-const btnAdd    = el("button", { id: "btn-add",    class: "action-btn" }, `Add numbers (${state.addUses}/${state.maxAddUses})`);
-const btnMenu   = el("button", { id: "btn-menu",   class: "action-btn" }, "Main menu");
- // rebuild Results UI after returning to menu
-const resModal = document.getElementById("results-modal");
-if (resModal) initResultsUI(resModal);
+  const btnReset = el(
+    "button",
+    { id: "btn-reset", class: "action-btn" },
+    "Reset",
+  );
+  const btnSave = el("button", { id: "btn-save", class: "action-btn" }, "Save");
+  const btnHint = el(
+    "button",
+    { id: "btn-hint", class: "action-btn" },
+    "Hints: ?",
+  );
+  const btnRevert = el(
+    "button",
+    { id: "btn-revert", class: "action-btn" },
+    "Revert",
+  );
+  const btnAdd = el(
+    "button",
+    { id: "btn-add", class: "action-btn" },
+    `Add numbers (${state.addUses}/${state.maxAddUses})`,
+  );
+  const btnMenu = el(
+    "button",
+    { id: "btn-menu", class: "action-btn" },
+    "Main menu",
+  );
+  // rebuild Results UI after returning to menu
+  const resModal = document.getElementById("results-modal");
+  if (resModal) initResultsUI(resModal);
 
   btnReset.addEventListener("click", () => {
     startNewGame(root, state.mode);
   });
 
   btnSave.addEventListener("click", () => {
-  btnSave.classList.add("clicked");
+    btnSave.classList.add("clicked");
     setTimeout(() => btnSave.classList.remove("clicked"), 400);
     saveGame();
-  console.log("[save] game saved");
+    console.log("[save] game saved");
   });
-  
- btnMenu.addEventListener("click", () => {
-  stopTimer();
-  root.innerHTML = "";
-  renderStartScreen(root, {
-    hasSavedGame,
-    startNewGame,
-    createModal,
-    initSettingsUI,
-    openModal,
-    continueGame,
-  });
+
+  btnMenu.addEventListener("click", () => {
+    stopTimer();
+    root.innerHTML = "";
+    renderStartScreen(root, {
+      hasSavedGame,
+      startNewGame,
+      createModal,
+      initSettingsUI,
+      openModal,
+      continueGame,
+    });
     const res = document.getElementById("results-modal");
-  if (res) initResultsUI?.(res);
-});
+    if (res) initResultsUI?.(res);
+  });
 
   btnHint.addEventListener("click", () => updateHintCount());
-  btnRevert.addEventListener("click", () => { revertLastMove(); updateRevertButton(); });
+  btnRevert.addEventListener("click", () => {
+    revertLastMove();
+    updateRevertButton();
+  });
 
-btnAdd.addEventListener("click", () => {
-  const { changed } = handleAddNumbers();
-  if (changed) {
-    renderGrid();
-    updateAssistButtons();
-    updateHintCount();
-  } else {
-    updateAssistButtons();
-  }
-});
+  btnAdd.addEventListener("click", () => {
+    const { changed } = handleAddNumbers();
+    if (changed) {
+      renderGrid();
+      updateAssistButtons();
+      updateHintCount();
+    } else {
+      updateAssistButtons();
+    }
+  });
 
-const btnShuffle = el("button", { id: "btn-shuffle" }, `Shuffle (${state.shuffleUses}/${state.maxShuffleUses})`);
-btnShuffle.addEventListener("click", () => {
-  const { changed } = handleShuffle();
-  if (changed) {
-    renderGrid();
-    updateAssistButtons();
-    updateHintCount();
-  } else {
-    updateAssistButtons();
-  }
-});
+  const btnShuffle = el(
+    "button",
+    { id: "btn-shuffle" },
+    `Shuffle (${state.shuffleUses}/${state.maxShuffleUses})`,
+  );
+  btnShuffle.addEventListener("click", () => {
+    const { changed } = handleShuffle();
+    if (changed) {
+      renderGrid();
+      updateAssistButtons();
+      updateHintCount();
+    } else {
+      updateAssistButtons();
+    }
+  });
 
-const btnEraser  = el("button", { id: "btn-eraser"  }, `Eraser (${state.eraserUses}/${state.maxEraserUses})`);
-btnEraser.addEventListener("click", () => {
-  const { toggled } = handleEraserToggle();
-  updateAssistButtons();
-});
+  const btnEraser = el(
+    "button",
+    { id: "btn-eraser" },
+    `Eraser (${state.eraserUses}/${state.maxEraserUses})`,
+  );
+  btnEraser.addEventListener("click", () => {
+    const { toggled } = handleEraserToggle();
+    updateAssistButtons();
+  });
 
-  controls.append(btnReset, btnSave, btnHint, btnRevert, btnAdd, btnShuffle, btnEraser, btnMenu);
+  controls.append(
+    btnReset,
+    btnSave,
+    btnHint,
+    btnRevert,
+    btnAdd,
+    btnShuffle,
+    btnEraser,
+    btnMenu,
+  );
 
   const grid = el("div", { id: "grid" });
 
